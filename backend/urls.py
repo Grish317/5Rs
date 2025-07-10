@@ -18,11 +18,21 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 from users.views import RegisterView, LoginView  # Import your views here
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/signup/', RegisterView.as_view(), name='signup'),
     path('api/login/', LoginView.as_view(), name='login'),
-    path('api/', include('users.urls')),  # Keep existing API routes
+    path('api/', include('users.urls')),
+    path('', include('users.urls')),  # Keep existing API routes
     path('', lambda request: HttpResponse("Backend is running!")),  # Simple root URL response
+    path('', include('logs.urls')),
+
+
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

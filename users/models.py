@@ -9,6 +9,11 @@ class CustomUser(AbstractUser):
     is_verified = models.BooleanField(default=False)
     is_ngo = models.BooleanField(default=False)
 
+    # ✅ Add these new fields here
+    bio = models.TextField(blank=True)
+    profile_picture = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    care_points = models.IntegerField(default=0)
+
     def __str__(self):
         return self.username
 
@@ -60,3 +65,59 @@ class Message(models.Model):
     def __str__(self):
         # Just the first 20 chars of the message to keep it tidy
         return f"[{self.timestamp}] {self.sender.username}: {self.content[:20]}"
+
+class Task(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    points = models.IntegerField(default=0)
+    posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='posted_tasks')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class TaskApplication(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('task', 'user')
+
+class LearningTrack(models.Model):
+    CATEGORY_CHOICES = [
+        ('life', 'Life Skills'),
+        ('income', 'Income Skills'),
+    ]
+
+    title = models.CharField(max_length=255)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.category})"
+
+
+class Lesson(models.Model):
+    track = models.ForeignKey(LearningTrack, on_delete=models.CASCADE, related_name='lessons')
+    title = models.CharField(max_length=255)
+    video_url = models.URLField()
+    thumbnail_url = models.URLField(blank=True)
+    youtube_id = models.CharField(max_length=50)
+    tags = models.CharField(max_length=255, help_text="Comma-separated tags")
+
+    def __str__(self):
+        return self.title
+
+
+class LearningLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='learning_logs')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'lesson')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.lesson.title}"

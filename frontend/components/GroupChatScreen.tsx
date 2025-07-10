@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, Button, FlatList, StyleSheet, KeyboardAvoidingView, Platform
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from "../constants/config";
 
-const API_URL = 'http://192.168.1.75:9000/api';
+const API_URL = `${BASE_URL}/api`;
 
 export default function ChatScreen({ groupId }: { groupId: string }) {
-    
-  console.log('groupId in ChatScreen:', groupId); // Should log '1' or actual ID
-
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -38,9 +43,7 @@ export default function ChatScreen({ groupId }: { groupId: string }) {
   };
 
   const sendMessage = async () => {
-    console.log("🟢 Send button clicked");
     if (!newMessage.trim()) return;
-
     const token = await AsyncStorage.getItem('token');
     if (!token) return;
 
@@ -59,7 +62,7 @@ export default function ChatScreen({ groupId }: { groupId: string }) {
 
       if (res.ok) {
         setNewMessage('');
-        fetchMessages(); // refresh messages
+        fetchMessages();
       } else {
         console.log('Failed sending message:', await res.text());
       }
@@ -75,12 +78,9 @@ export default function ChatScreen({ groupId }: { groupId: string }) {
   };
 
   useEffect(() => {
-    if (!groupId) {
-      console.warn('No groupId provided');
-      return;
-    }
+    if (!groupId) return;
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000); // poll every 5s
+    const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [groupId]);
 
@@ -95,13 +95,15 @@ export default function ChatScreen({ groupId }: { groupId: string }) {
         data={messages}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.messageContainer}>
+          <View style={styles.messageBubble}>
             <Text style={styles.sender}>{item.sender_username}</Text>
             <Text style={styles.content}>{item.content}</Text>
-            <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
+            <Text style={styles.timestamp}>
+              {new Date(item.timestamp).toLocaleTimeString()}
+            </Text>
           </View>
         )}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={styles.chatBody}
       />
 
       <View style={styles.inputContainer}>
@@ -111,57 +113,80 @@ export default function ChatScreen({ groupId }: { groupId: string }) {
           value={newMessage}
           onChangeText={setNewMessage}
         />
-        <Button title="Send" onPress={sendMessage} />
+        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+          <Text style={styles.sendText}>Send</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-// styles remain unchanged
-
-
-    const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 12,
-        backgroundColor: '#f9f9f9',
-    },
-    messageContainer: {
-        marginBottom: 12,
-        padding: 10,
-        borderRadius: 8,
-        backgroundColor: '#ffffff',
-        elevation: 2,
-    },
-    sender: {
-        fontWeight: 'bold',
-        marginBottom: 4,
-        color: '#333',
-    },
-    content: {
-        fontSize: 16,
-        color: '#000',
-    },
-    timestamp: {
-        fontSize: 12,
-        color: '#888',
-        marginTop: 6,
-        textAlign: 'right',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        padding: 8,
-        borderTopWidth: 1,
-        borderColor: '#ddd',
-        backgroundColor: '#fff',
-    },
-    input: {
-        flex: 1,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 6,
-        marginRight: 8,
-    },
-    });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffe4ec',
+  },
+  chatBody: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  messageBubble: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sender: {
+    fontWeight: '600',
+    color: '#5c007a',
+    marginBottom: 4,
+  },
+  content: {
+    fontSize: 16,
+    color: '#333',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 6,
+    textAlign: 'right',
+  },
+  inputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    padding: 12,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#f4b5d3',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 8,
+    backgroundColor: '#fff',
+    fontSize: 16,
+  },
+  sendButton: {
+    backgroundColor: '#f06292',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+  },
+  sendText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});
